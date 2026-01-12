@@ -1,12 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Agregado useEffect
 
-// Definimos la interface para que el formulario sepa qué datos devolver
-interface FormularioModalProps {
-  onClose: () => void; // Función para cerrar el modal
-  onSave: (data: Omit<Producto, 'id'>) => void; // Función para guardar (sin el ID, que se genera después)
-}
-
-interface Producto { // Repetimos la interface Producto aquí para no importar
+interface Producto {
   id: number;
   nombre: string;
   categoria: string;
@@ -14,25 +8,37 @@ interface Producto { // Repetimos la interface Producto aquí para no importar
   precio: number;
 }
 
-const FormularioModal = ({ onClose, onSave }: FormularioModalProps) => {
-  // Estado local para los inputs del formulario
-  const [nombre, setNombre] = useState('');
-  const [cantidad, setCantidad] = useState(0);
-  const [precio, setPrecio] = useState(0);
+interface FormularioModalProps {
+  onClose: () => void;
+  onSave: (data: Omit<Producto, 'id'>) => void;
+  productoExistente?: Producto | null; // Agregada esta línea
+}
+
+const FormularioModal = ({ onClose, onSave, productoExistente }: FormularioModalProps) => {
+  const [nombre, setNombre] = useState(productoExistente?.nombre || '');
+  const [cantidad, setCantidad] = useState(productoExistente?.cantidad || 0);
+  const [precio, setPrecio] = useState(productoExistente?.precio || 0);
+
+  useEffect(() => {
+    if (productoExistente) {
+      setNombre(productoExistente.nombre);
+      setCantidad(productoExistente.cantidad);
+      setPrecio(productoExistente.precio);
+    }
+  }, [productoExistente]);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // Evita que la página se recargue (comportamiento por defecto de HTML)
-    onSave({ nombre, categoria: "Varios", cantidad, precio }); // Pasamos los datos al componente padre (App.tsx)
-    onClose(); // Cerramos el modal
+    e.preventDefault();
+    onSave({ nombre, categoria: "Varios", cantidad, precio });
+    onClose();
   };
 
   return (
-    // Fondo oscuro del modal
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      
-      {/* Contenido del Modal */}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-        <h2 className="text-2xl font-semibold mb-4">Agregar Producto</h2>
+        <h2 className="text-2xl font-semibold mb-4">
+          {productoExistente ? 'Editar Producto' : 'Agregar Producto'}
+        </h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -40,7 +46,7 @@ const FormularioModal = ({ onClose, onSave }: FormularioModalProps) => {
             <input 
               type="text" 
               value={nombre} 
-              onChange={(e) => setNombre(e.target.value)} // Captura lo que escribís en el input
+              onChange={(e) => setNombre(e.target.value)}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm"
               required
             />
@@ -51,39 +57,26 @@ const FormularioModal = ({ onClose, onSave }: FormularioModalProps) => {
             <input 
               type="number" 
               value={cantidad} 
-              onChange={(e) => setCantidad(Number(e.target.value))} // Convierte el texto del input a número
+              onChange={(e) => setCantidad(Number(e.target.value))}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm"
               required
-              min="0"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Precio ($AR)</label>
+            <label className="block text-sm font-medium text-gray-700">Precio</label>
             <input 
               type="number" 
               value={precio} 
-              onChange={(e) => setPrecio(Number(e.target.value))} // Convierte el texto del input a número
+              onChange={(e) => setPrecio(Number(e.target.value))}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm"
               required
-              min="0"
             />
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
-            >
-              Cancelar
-            </button>
-            <button 
-              type="submit" 
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow-md"
-            >
-              Guardar
-            </button>
+          <div className="flex justify-end gap-2 pt-4">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 border rounded-md">Cancelar</button>
+            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md">Guardar</button>
           </div>
         </form>
       </div>
